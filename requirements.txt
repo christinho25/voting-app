@@ -1,4 +1,4 @@
-Flask==3.0.0
+Set-Content -Path "requirements.txt" -Value "Flask==3.0.0
 Flask-SQLAlchemy==3.1.1
 Flask-SocketIO==5.3.6
 Flask-Limiter==3.5.0
@@ -6,4 +6,4 @@ Werkzeug==3.0.1
 python-socketio==5.10.0
 python-engineio==4.8.0
 eventlet==0.35.1
-gunicorn==21.2.09
+gunicorn==21.2.0"
