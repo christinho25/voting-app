@@ -6,4 +6,4 @@ Werkzeug==3.0.1
 python-socketio==5.10.0
 python-engineio==4.8.0
 eventlet==0.35.1
-psycopg2-binary==2.9.9
+gunicorn==21.2.09
