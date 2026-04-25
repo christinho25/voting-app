@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+{% block title %}SecureVote — Admin Dashboard{% endblock %}
+
+{% block head %}
+<style>
+  .admin-page { min-height: calc(100vh - 60px); background: var(--paper); }
+  /* LOGIN */
+  .login-wrap {
+    display: flex; align-items: center; justify-content: center;
+    min-height: calc(100vh - 60px);
+    padding: 2rem;
+  }
+  .login-card {
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2.5rem;
+    width: 100%; max-width: 380px;
+    box-shadow: var(--shadow-lg);
+  }
+  .login-icon { font-size: 2.5rem; text-align: center; margin-bottom: 1rem; }
+  .login-title { font-family:'DM Serif Display',serif; font-size:1.5rem; text-align:center; margin-bottom:0.25rem; }
+  .login-sub { color:var(--muted); font-size:0.875rem; text-align:center; margin-bottom:1.75rem; }
+  /* DASHBOARD */
+  .admin-dash { display: none; padding: 2.5rem 0 5rem; }
+  .dash-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;
+  }
+  .dash-title { font-family:'DM Serif Display',serif; font-size:2rem; }
+  /* TABS */
+  .tabs {
+    display: flex; gap: 0.25rem;
+    background: var(--cream); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.3rem;
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 0.5rem 1.1rem;
+    border-radius: 7px;
+    font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    color: var(--muted); border: none; background: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab.active { background: var(--ink); color: #fff; }
+  .tab:hover:not(.active) { color: var(--ink); background: rgba(0,0,0,0.05); }
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+  /* SECTION */
+  .section { margin-bottom: 2rem; }
+  .section-card { background: var(--cream); border: 1px solid var(--border); border-radius: 12px; padding: 1.75rem; }
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .data-table th { padding: 0.7rem 1rem; text-align: left; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .data-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(0,0,0,0.02); }
+  .table-wrap { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+  /* FORM ROW */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-group label { font-size: 0.83rem; font-weight: 600; }
+  /* DANGER ZONE */
+  .danger-zone { border: 1.5px dashed #e07050; border-radius: 12px; padding: 1.5rem; }
+  .danger-title { color: var(--red); font-weight: 700; margin-bottom: 0.5rem; }
+  .danger-desc { color: var(--muted); font-size: 0.875rem; margin-bottom: 1rem; }
+  /* VOTER SEARCH */
+  .search-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 2rem; }
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .tabs { flex-direction: column; }
+  }
+  /* INLINE MSG */
+  .panel-msg { min-height: 1.75rem; margin-bottom: 0.75rem; }
+  /* PROGRESS */
+  .turnout-bar { background: var(--border); border-radius: 100px; height: 10px; margin-top: 0.5rem; }
+  .turnout-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--green), var(--green-light)); transition: width 0.5s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page">
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-wrap" id="login-screen">
+    <div class="login-card">
+      <div class="login-icon">🔐</div>
+      <div class="login-title">Admin Access</div>
+      <div class="login-sub">Enter your password to access the dashboard</div>
+      <div id="login-msg" style="margin-bottom:0.75rem;min-height:1.5rem"></div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label>Password</label>
+        <input class="input" type="password" id="admin-pass" placeholder="Enter admin password" />
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="adminLogin()">Login</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="admin-dash container" id="admin-dash">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title">Admin Dashboard</div>
+        <div style="color:var(--muted);font-size:0.875rem">Election control panel</div>
+      </div>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <div id="admin-status-badge" class="badge badge-muted" style="font-size:0.8rem">Loading...</div>
+        <button class="btn btn-outline" style="font-size:0.8rem;padding:0.45rem 0.9rem" onclick="adminLogout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid" id="admin-stats">
+      <div class="stat-card"><div class="stat-label">Total Voters</div><div class="stat-value" id="s-total">—</div></div>
+      <div class="stat-card"><div class="stat-label">Votes Cast</div><div class="stat-value" id="s-voted">—</div></div>
+      <div class="stat-card"><div class="stat-label">Not Voted</div><div class="stat-value" id="s-remaining">—</div></div>
+      <div class="stat-card">
+        <div class="stat-label">Turnout</div>
+        <div class="stat-value" id="s-turnout">—</div>
+        <div class="turnout-bar"><div class="turnout-fill" id="turnout-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs" style="margin-bottom:2rem">
+      <button class="tab active" onclick="switchTab('voters')">Voters</button>
+      <button class="tab" onclick="switchTab('candidates')">Candidates</button>
+      <button class="tab" onclick="switchTab('settings')">Election Settings</button>
+      <button class="tab" onclick="switchTab('danger')">Reset</button>
+    </div>
+
+    <!-- VOTERS PANEL -->
+    <div class="panel active" id="panel-voters">
+      <div class="section-card section">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.25rem">
+          <div>
+            <div class="section-title" style="font-size:1.15rem">Voter IDs</div>
+            <div style="color:var(--muted);font-size:0.85rem">Manage and generate voter ID codes</div>
+          </div>
+          <div style="display:flex;gap:0.75rem;align-items:center">
+            <input class="input" type="number" id="gen-count" value="100" min="1" max="500" style="width:90px" />
+            <button class="btn btn-gold" onclick="generateVoters()">Generate IDs</button>
+            <button class="btn btn-outline" onclick="exportVoters()">Export CSV</button>
+          </div>
+        </div>
+        <div id="gen-msg" class="panel-msg"></div>
+        <div class="search-row">
+          <input class="input" type="text" id="voter-search" placeholder="Search by code or status..." oninput="filterVoters()" style="max-width:320px" />
+          <select class="input" id="voter-filter" onchange="filterVoters()" style="max-width:160px">
+            <option value="">All voters</option>
+            <option value="voted">Voted</option>
+            <option value="pending">Not voted</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Voter Code</th><th>Status</th><th>Voted At</th><th>Created</th></tr></thead>
+            <tbody id="voters-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div style="color:var(--muted);font-size:0.78rem;margin-top:0.75rem" id="voter-count-label"></div>
+      </div>
+    </div>
+
+    <!-- CANDIDATES PANEL -->
+    <div class="panel" id="panel-candidates">
+      <div class="section-card section">
+        <div class="section-title" style="font-size:1.15rem;margin-bottom:0.25rem">Manage Candidates</div>
+        <div style="color:var(--muted);font-size:0.85rem;margin-bottom:1.25rem">Add, edit or remove election candidates</div>
+        <div id="cand-msg" class="panel-msg"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:0.75rem;align-items:end;margin-bottom:1.5rem;flex-wrap:wrap">
+          <div class="form-group">
+            <label>Name</label>
+            <input class="input" id="cand-name" placeholder="Candidate full name" />
+          </div>
+          <div class="form-group">
+            <label>Position / Party (optional)</label>
+            <input class="input" id="cand-pos" placeholder="e.g. Independent" />
+          </div>
+          <button class="btn btn-primary" onclick="addCandidate()" style="height:44px">Add</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Name</th><th>Position</th><th>Votes</th><th>Actions</th></tr></thead>
+            <tbody id="cands-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div class="panel" id="panel-settings">
+      <div class="section-card section">
+        <div class="section-title" style="font-size:1.15rem;margin-bottom:0.25rem">Election Settings</div>
+        <div style="color:var(--muted);font-size:0.85rem;margin-bottom:1.5rem">Configure the election name and voting timeframe</div>
+        <div id="settings-msg" class="panel-msg"></div>
+        <div class="form-group" style="margin-bottom:1rem;max-width:480px">
+          <label>Election Name</label>
+          <input class="input" id="election-name" placeholder="e.g. Student Council Election 2025" />
+        </div>
+        <div class="form-row" style="max-width:640px">
+          <div class="form-group">
+            <label>Voting Start (UTC)</label>
+            <input class="input" type="datetime-local" id="start-time" />
+          </div>
+          <div class="form-group">
+            <label>Voting End (UTC)</label>
+            <input class="input" type="datetime-local" id="end-time" />
+          </div>
+        </div>
+        <div style="margin-top:1.25rem;display:flex;gap:0.75rem;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+          <button class="btn btn-green" onclick="startNow()">▶ Start Voting Now</button>
+          <button class="btn btn-danger" onclick="stopNow()">■ Stop Voting Now</button>
+        </div>
+        <div style="margin-top:1.5rem;padding:1rem;background:rgba(0,0,0,0.03);border-radius:8px;font-size:0.85rem;color:var(--muted)">
+          💡 <strong>Tip:</strong> Set the start/end times to a past/future date to control the election window. No manual restart needed — it's fully automatic.
+        </div>
+      </div>
+    </div>
+
+    <!-- DANGER PANEL -->
+    <div class="panel" id="panel-danger">
+      <div class="danger-zone">
+        <div class="danger-title">⚠ Danger Zone — Reset Election</div>
+        <div class="danger-desc">
+          This will clear <strong>all votes</strong>, reset all voter IDs to unused, and zero all candidate tallies.
+          Voter IDs and candidates are preserved. This action <strong>cannot be undone</strong>.
+        </div>
+        <button class="btn btn-danger" onclick="confirmReset()">Reset All Votes</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let allVoters = [];
+
+  // ─── AUTH ──────────────────────────────────────────────────────────────────
+  async function adminLogin() {
+    const pw = document.getElementById('admin-pass').value;
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({password: pw})
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('admin-dash').style.display = 'block';
+      loadAll();
+    } else {
+      document.getElementById('login-msg').innerHTML = '<div class="alert alert-error">✕ ' + (data.message||'Invalid password') + '</div>';
+    }
+  }
+  document.getElementById('admin-pass').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
+
+  async function adminLogout() {
+    await fetch('/api/admin/logout', {method:'POST'});
+    location.reload();
+  }
+
+  // Check if already logged in
+  (async () => {
+    try {
+      const r = await fetch('/api/admin/status');
+      if (r.ok) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-dash').style.display = 'block';
+        loadAll();
+      }
+    } catch(e) {}
+  })();
+
+  // ─── TABS ──────────────────────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    if (name === 'voters') loadVoters();
+    if (name === 'candidates') loadCandidates();
+    if (name === 'settings') loadSettings();
+  }
+
+  // ─── LOAD ALL ─────────────────────────────────────────────────────────────
+  function loadAll() {
+    loadStats(); loadVoters(); loadCandidates(); loadSettings();
+    setInterval(loadStats, 10000);
+  }
+
+  async function loadStats() {
+    try {
+      const r = await fetch('/api/admin/stats');
+      const d = await r.json();
+      document.getElementById('s-total').textContent = d.total_voters;
+      document.getElementById('s-voted').textContent = d.voted;
+      document.getElementById('s-remaining').textContent = d.not_voted;
+      document.getElementById('s-turnout').textContent = d.turnout + '%';
+      document.getElementById('turnout-fill').style.width = d.turnout + '%';
+      const statusMap = { open:'🟢 Open', not_started:'🕐 Not Started', ended:'🏁 Ended', not_configured:'⚙️ Not Configured' };
+      const badge = document.getElementById('admin-status-badge');
+      badge.textContent = statusMap[d.status] || d.status;
+      badge.className = 'badge ' + (d.status==='open' ? 'badge-green' : d.status==='ended' ? 'badge-muted' : 'badge-gold');
+    } catch(e) {}
+  }
+
+  // ─── VOTERS ───────────────────────────────────────────────────────────────
+  async function loadVoters() {
+    const r = await fetch('/api/admin/voters');
+    allVoters = await r.json();
+    renderVoters(allVoters);
+  }
+
+  function renderVoters(list) {
+    const tbody = document.getElementById('voters-tbody');
+    document.getElementById('voter-count-label').textContent = `Showing ${list.length} voter(s)`;
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No voters yet</td></tr>'; return; }
+    tbody.innerHTML = list.map((v,i) => `
+      <tr>
+        <td style="color:var(--muted)">${i+1}</td>
+        <td><span class="mono" style="font-size:0.85rem">${v.unique_code}</span></td>
+        <td>${v.has_voted ? '<span class="badge badge-green">Voted</span>' : '<span class="badge badge-muted">Pending</span>'}</td>
+        <td style="font-size:0.82rem;color:var(--muted)">${v.vote_time ? new Date(v.vote_time).toLocaleString() : '—'}</td>
+        <td style="font-size:0.78rem;color:var(--muted)">${new Date(v.created_at).toLocaleDateString()}</td>
+      </tr>`).join('');
+  }
+
+  function filterVoters() {
+    const q = document.getElementById('voter-search').value.toLowerCase();
+    const f = document.getElementById('voter-filter').value;
+    let list = allVoters.filter(v => v.unique_code.toLowerCase().includes(q));
+    if (f === 'voted') list = list.filter(v => v.has_voted);
+    if (f === 'pending') list = list.filter(v => !v.has_voted);
+    renderVoters(list);
+  }
+
+  async function generateVoters() {
+    const count = document.getElementById('gen-count').value;
+    const r = await fetch('/api/admin/generate-voters', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({count: parseInt(count)})
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(`Generated ${d.count} voter IDs`, 'success');
+      document.getElementById('gen-msg').innerHTML = `<div class="alert alert-success">✓ ${d.count} voter IDs generated successfully.</div>`;
+      loadVoters(); loadStats();
+    }
+  }
+
+  function exportVoters() {
+    const rows = [['Code','Status','Voted At','Created']];
+    allVoters.forEach(v => rows.push([v.unique_code, v.has_voted?'Voted':'Pending', v.vote_time||'', v.created_at]));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = 'data:text/csv,' + encodeURIComponent(csv);
+    a.download = 'voter_ids.csv';
+    a.click();
+  }
+
+  // ─── CANDIDATES ───────────────────────────────────────────────────────────
+  async function loadCandidates() {
+    const r = await fetch('/api/admin/candidates');
+    const list = await r.json();
+    const tbody = document.getElementById('cands-tbody');
+    if (!list.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No candidates added yet</td></tr>'; return; }
+    tbody.innerHTML = list.map(c => `
+      <tr>
+        <td style="color:var(--muted)">${c.id}</td>
+        <td><strong>${c.name}</strong></td>
+        <td style="color:var(--muted)">${c.position||'—'}</td>
+        <td><strong>${c.vote_count}</strong></td>
+        <td>
+          <button class="btn btn-outline" style="font-size:0.75rem;padding:0.3rem 0.6rem" onclick="deleteCandidate(${c.id},'${c.name}')">Delete</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  async function addCandidate() {
+    const name = document.getElementById('cand-name').value.trim();
+    const pos = document.getElementById('cand-pos').value.trim();
+    if (!name) { document.getElementById('cand-msg').innerHTML = '<div class="alert alert-error">✕ Name is required</div>'; return; }
+    const r = await fetch('/api/admin/candidates', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, position: pos})
+    });
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('cand-name').value = '';
+      document.getElementById('cand-pos').value = '';
+      document.getElementById('cand-msg').innerHTML = '<div class="alert alert-success">✓ Candidate added</div>';
+      loadCandidates();
+    }
+  }
+
+  async function deleteCandidate(id, name) {
+    if (!confirm(`Delete candidate "${name}"? This cannot be undone.`)) return;
+    await fetch(`/api/admin/candidates/${id}`, {method:'DELETE'});
+    loadCandidates();
+  }
+
+  // ─── SETTINGS ─────────────────────────────────────────────────────────────
+  async function loadSettings() {
+    const r = await fetch('/api/admin/settings');
+    const d = await r.json();
+    document.getElementById('election-name').value = d.election_name || '';
+    if (d.start_time) document.getElementById('start-time').value = d.start_time.slice(0,16);
+    if (d.end_time) document.getElementById('end-time').value = d.end_time.slice(0,16);
+  }
+
+  async function saveSettings() {
+    const payload = {
+      election_name: document.getElementById('election-name').value,
+      start_time: document.getElementById('start-time').value ? document.getElementById('start-time').value + ':00Z' : null,
+      end_time: document.getElementById('end-time').value ? document.getElementById('end-time').value + ':00Z' : null,
+    };
+    const r = await fetch('/api/admin/settings', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (d.success) {
+      document.getElementById('settings-msg').innerHTML = '<div class="alert alert-success">✓ Settings saved. Status: ' + d.status + '</div>';
+      loadStats();
+    }
+  }
+
+  function startNow() {
+    const now = new Date().toISOString().slice(0,16);
+    const future = new Date(Date.now() + 7*24*60*60*1000).toISOString().slice(0,16);
+    document.getElementById('start-time').value = now;
+    document.getElementById('end-time').value = future;
+    saveSettings();
+  }
+
+  function stopNow() {
+    const past = new Date(Date.now() - 1000).toISOString().slice(0,16);
+    document.getElementById('end-time').value = past;
+    saveSettings();
+  }
+
+  // ─── RESET ────────────────────────────────────────────────────────────────
+  async function confirmReset() {
+    const confirmed = confirm('⚠ RESET ELECTION?\n\nThis will:\n• Delete all recorded votes\n• Reset all voter IDs to unused\n• Zero all vote counts\n\nThis CANNOT be undone. Type YES to confirm.');
+    if (!confirmed) return;
+    const r = await fetch('/api/admin/reset', {method:'POST'});
+    const d = await r.json();
+    if (d.success) {
+      showToast('Election reset successfully', 'success');
+      loadAll();
+    }
+  }
+</script>
+{% endblock %}

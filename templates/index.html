@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+{% block title %}CGS 2010 Set — Enter Your Voter ID{% endblock %}
+
+{% block head %}
+<style>
+  .hero {
+    min-height: calc(100vh - 60px);
+    display: flex; align-items: center;
+    background: 
+      radial-gradient(ellipse 60% 50% at 70% 50%, rgba(200,151,58,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 60% at 20% 80%, rgba(45,106,79,0.05) 0%, transparent 60%),
+      var(--paper);
+  }
+  .hero-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+    padding: 4rem 0;
+  }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px; height: 2px;
+    background: var(--gold);
+  }
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 3.5rem;
+    line-height: 1.1;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.02em;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+  .hero-desc {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 2rem;
+    max-width: 420px;
+  }
+  .trust-row {
+    display: flex; gap: 1.5rem; align-items: center;
+    flex-wrap: wrap;
+  }
+  .trust-item {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.8rem; color: var(--muted); font-weight: 500;
+  }
+  .trust-item svg { flex-shrink: 0; }
+  /* FORM CARD */
+  .form-card {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(200,151,58,0.08);
+  }
+  .form-card-header {
+    margin-bottom: 2rem;
+  }
+  .form-card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    margin-bottom: 0.4rem;
+  }
+  .form-card-sub { color: var(--muted); font-size: 0.875rem; }
+  .field-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--ink);
+  }
+  .id-input-wrap { position: relative; }
+  .id-input-wrap .input {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.05rem;
+    letter-spacing: 0.05em;
+    padding-right: 3rem;
+    text-transform: uppercase;
+  }
+  .id-input-wrap .clear-btn {
+    position: absolute; right: 0.75rem; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); display: none;
+    padding: 0.25rem;
+    border-radius: 4px;
+  }
+  .id-input-wrap .clear-btn:hover { color: var(--ink); }
+  .submit-btn {
+    width: 100%;
+    padding: 0.9rem;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    margin-top: 1.25rem;
+  }
+  .msg-area { min-height: 2.5rem; margin-top: 1rem; }
+  /* STEPS */
+  .steps {
+    display: flex; flex-direction: column; gap: 0;
+    margin-top: 2rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .step {
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: 0.75rem 0;
+    position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 16px; top: 42px;
+    width: 2px; height: calc(100% - 12px);
+    background: var(--border);
+  }
+  .step-num {
+    width: 32px; height: 32px;
+    background: var(--ink); color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-body { padding-top: 0.35rem; }
+  .step-title { font-weight: 600; font-size: 0.9rem; }
+  .step-desc { color: var(--muted); font-size: 0.8rem; margin-top: 0.1rem; }
+  /* DECORATIVE SEAL */
+  .seal {
+    position: absolute;
+    top: -20px; right: -20px;
+    width: 80px; height: 80px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(200,151,58,0.35);
+    border: 3px solid #fff;
+  }
+  .seal-text { font-size: 0.55rem; font-weight: 700; color: #fff; letter-spacing: 0.08em; text-align: center; line-height: 1.3; }
+  .form-wrap { position: relative; }
+  @media (max-width: 900px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+    .hero-title { font-size: 2.4rem; }
+    .seal { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <!-- LEFT -->
+      <div class="hero-left">
+        <div class="hero-eyebrow">CGS OldBoys 2010 Set Election Platform</div>
+        <h1 class="hero-title">
+          Your voice,<br>
+          your <em>vote</em>,<br>
+          verified.
+        </h1>
+        <p class="hero-desc">
+          A tamper-proof digital ballot system with unique voter IDs, real-time results, and end-to-end verification. Every vote counts — exactly once.
+        </p>
+        <div class="trust-row">
+          <div class="trust-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            One vote per ID
+          </div>
+          <div class="trust-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Time-enforced
+          </div>
+          <div class="trust-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Live results
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="form-wrap">
+        <div class="seal">
+          <div class="seal-text">CGS<br>2010 SET<br>✓</div>
+        </div>
+        <div class="form-card">
+          <div class="form-card-header">
+            <div class="form-card-title">Cast Your Vote</div>
+            <div class="form-card-sub">Enter your unique voter ID to access the ballot</div>
+          </div>
+
+          <label class="field-label" for="voter-id">Voter ID</label>
+          <div class="id-input-wrap">
+            <input
+              class="input"
+              id="voter-id"
+              type="text"
+              placeholder="VOTE-XXXXXX"
+              maxlength="11"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button class="clear-btn" id="clear-btn" title="Clear">✕</button>
+          </div>
+
+          <div class="msg-area" id="msg-area"></div>
+
+          <button class="btn btn-primary submit-btn" id="submit-btn">
+            Verify &amp; Proceed to Ballot
+          </button>
+
+          <div class="steps">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <div class="step-title">Enter Voter ID</div>
+                <div class="step-desc">Use the unique code you received (format: VOTE-XXXXXX)</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <div class="step-title">Select a Candidate</div>
+                <div class="step-desc">Review candidates and make your choice</div>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <div class="step-title">Confirm Your Vote</div>
+                <div class="step-desc">Submit — your vote is recorded securely and immediately</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const input = document.getElementById('voter-id');
+  const clearBtn = document.getElementById('clear-btn');
+  const submitBtn = document.getElementById('submit-btn');
+  const msgArea = document.getElementById('msg-area');
+
+  input.addEventListener('input', () => {
+    clearBtn.style.display = input.value ? 'flex' : 'none';
+    msgArea.innerHTML = '';
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  clearBtn.addEventListener('click', () => {
+    input.value = ''; input.focus();
+    clearBtn.style.display = 'none';
+    msgArea.innerHTML = '';
+  });
+
+  function setMsg(msg, type) {
+    const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+    msgArea.innerHTML = `<div class="alert alert-${type}">${icons[type] || ''} ${msg}</div>`;
+  }
+
+  async function submit() {
+    const val = input.value.trim().toUpperCase();
+    if (!val) { input.focus(); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+    msgArea.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/validate-voter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voter_id: val })
+      });
+      const data = await res.json();
+
+      if (data.valid) {
+        setMsg(data.message, 'success');
+        submitBtn.innerHTML = '<span class="spinner"></span> Redirecting...';
+        setTimeout(() => window.location.href = '/vote', 800);
+      } else {
+        setMsg(data.message, 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Verify &amp; Proceed to Ballot';
+        input.focus(); input.select();
+      }
+    } catch (e) {
+      setMsg('Network error. Please try again.', 'error');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Verify &amp; Proceed to Ballot';
+    }
+  }
+
+  submitBtn.addEventListener('click', submit);
+</script>
+{% endblock %}

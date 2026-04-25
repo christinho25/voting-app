@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+{% block title %}CGS 2010 Set — Ballot{% endblock %}
+
+{% block head %}
+<style>
+  .ballot-page {
+    padding: 3rem 0 5rem;
+    min-height: calc(100vh - 60px);
+    background:
+      radial-gradient(ellipse 50% 40% at 80% 20%, rgba(45,106,79,0.04) 0%, transparent 60%),
+      var(--paper);
+  }
+  .ballot-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+  .ballot-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .ballot-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .ballot-sub { color: var(--muted); font-size: 0.95rem; }
+  .voter-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--cream); border: 1.5px solid var(--border);
+    border-radius: 100px;
+    padding: 0.4rem 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    color: var(--ink);
+  }
+  .voter-badge .dot { width: 8px; height: 8px; background: var(--green-light); border-radius: 50%; }
+  /* BALLOT LAYOUT */
+  .ballot-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+    align-items: start;
+  }
+  /* CANDIDATES */
+  .candidates-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .candidate-card {
+    background: var(--cream);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 1.4rem 1.6rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 1.25rem;
+    position: relative;
+    user-select: none;
+  }
+  .candidate-card:hover {
+    border-color: var(--gold);
+    background: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+  }
+  .candidate-card.selected {
+    border-color: var(--green);
+    background: #f0faf5;
+    box-shadow: 0 0 0 3px rgba(45,106,79,0.12);
+  }
+  .candidate-card.selected::after {
+    content: '✓';
+    position: absolute; right: 1.25rem;
+    width: 28px; height: 28px;
+    background: var(--green); color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700;
+    line-height: 28px; text-align: center;
+  }
+  .candidate-radio {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .candidate-card.selected .candidate-radio {
+    border-color: var(--green);
+  }
+  .candidate-radio::after {
+    content: '';
+    position: absolute; top: 3px; left: 3px;
+    width: 10px; height: 10px;
+    background: var(--green);
+    border-radius: 50%;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .candidate-card.selected .candidate-radio::after { opacity: 1; }
+  .candidate-avatar {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--ink) 0%, #3a4055 100%);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+  .candidate-info { flex: 1; }
+  .candidate-name { font-weight: 700; font-size: 1.05rem; }
+  .candidate-position { color: var(--muted); font-size: 0.85rem; margin-top: 0.1rem; }
+  /* SIDEBAR */
+  .ballot-sidebar { position: sticky; top: 80px; }
+  .summary-card {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    box-shadow: var(--shadow);
+  }
+  .summary-title { font-weight: 700; font-size: 1rem; margin-bottom: 1.25rem; }
+  .summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px dashed var(--border);
+    font-size: 0.875rem;
+  }
+  .summary-row:last-of-type { border-bottom: none; }
+  .summary-label { color: var(--muted); }
+  .summary-value { font-weight: 600; }
+  .selected-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.15rem;
+    margin: 1rem 0;
+    padding: 0.85rem;
+    background: #f0faf5;
+    border-radius: 8px;
+    border: 1px solid #b7dfc9;
+    text-align: center;
+    min-height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--green);
+  }
+  .cast-btn {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    margin-top: 1rem;
+  }
+  .warning-note {
+    font-size: 0.78rem; color: var(--muted);
+    text-align: center; margin-top: 0.85rem;
+    line-height: 1.5;
+  }
+  /* STATUS SCREENS */
+  .status-screen {
+    text-align: center;
+    padding: 5rem 1rem;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+  .status-icon {
+    font-size: 4rem;
+    margin-bottom: 1.25rem;
+    display: block;
+  }
+  .status-screen h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    margin-bottom: 0.75rem;
+  }
+  .status-screen p { color: var(--muted); font-size: 1rem; }
+  /* CONFIRM MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(13,15,20,0.55);
+    z-index: 200;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(3px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--cream);
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 420px; width: 90%;
+    box-shadow: var(--shadow-lg);
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem; margin-bottom: 0.5rem;
+  }
+  .modal-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.75rem; }
+  .modal-candidate {
+    background: #f0faf5;
+    border: 1px solid #b7dfc9;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .modal-candidate .name { font-weight: 700; font-size: 1.05rem; }
+  .modal-candidate .pos { color: var(--muted); font-size: 0.85rem; }
+  .modal-actions { display: flex; gap: 0.75rem; }
+  .modal-actions .btn { flex: 1; }
+  @media (max-width: 768px) {
+    .ballot-layout { grid-template-columns: 1fr; }
+    .ballot-sidebar { position: static; }
+    .ballot-title { font-size: 2rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ballot-page">
+  <div class="container">
+
+    {% if status == 'not_started' %}
+    <div class="status-screen">
+      <span class="status-icon">🕐</span>
+      <h2>Voting Has Not Started</h2>
+      <p>The election period has not begun yet. Please check back later.</p>
+      <a href="/" class="btn btn-outline" style="margin-top:1.5rem">Go Back</a>
+    </div>
+
+    {% elif status == 'ended' %}
+    <div class="status-screen">
+      <span class="status-icon">🏁</span>
+      <h2>Voting Has Ended</h2>
+      <p>The election period has closed. Thank you for your participation.</p>
+      <a href="/results" class="btn btn-primary" style="margin-top:1.5rem">View Results</a>
+    </div>
+
+    {% else %}
+    <!-- BALLOT HEADER -->
+    <div class="ballot-header">
+      <div class="ballot-eyebrow">Presidential Official Ballot</div>
+      <h1 class="ballot-title">Vote Your Candidate</h1>
+      <p class="ballot-sub">Choose one candidate from the list below</p>
+      <div class="voter-badge">
+        <div class="dot"></div>
+        Voter ID: {{ voter.unique_code }}
+      </div>
+    </div>
+
+    {% if not candidates %}
+    <div class="status-screen">
+      <span class="status-icon">📋</span>
+      <h2>No Candidates Yet</h2>
+      <p>The admin has not added any candidates to this election yet.</p>
+    </div>
+    {% else %}
+    <div class="ballot-layout">
+      <!-- CANDIDATES -->
+      <div>
+        <div style="font-weight:700;margin-bottom:1rem;font-size:0.9rem;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;">
+          {{ candidates|length }} Candidate{% if candidates|length != 1 %}s{% endif %}
+        </div>
+        <div class="candidates-list" id="candidates-list">
+          {% for c in candidates %}
+          <div class="candidate-card" data-id="{{ c.id }}" data-name="{{ c.name }}" data-position="{{ c.position or '' }}" onclick="selectCandidate(this)">
+            <div class="candidate-radio"></div>
+            <div class="candidate-avatar">{{ c.name[0].upper() }}</div>
+            <div class="candidate-info">
+              <div class="candidate-name">{{ c.name }}</div>
+              {% if c.position %}<div class="candidate-position">{{ c.position }}</div>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <div class="ballot-sidebar">
+        <div class="summary-card">
+          <div class="summary-title">Your Ballot Summary</div>
+          <div class="summary-row">
+            <span class="summary-label">Voter ID</span>
+            <span class="summary-value mono" style="font-size:0.78rem">{{ voter.unique_code }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Status</span>
+            <span class="badge badge-green">Eligible</span>
+          </div>
+          <div style="margin-top:1rem;font-size:0.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;">Selected Candidate</div>
+          <div class="selected-name" id="selected-display">— None selected —</div>
+          <button class="btn btn-green cast-btn" id="cast-btn" onclick="openConfirm()" disabled>
+            Cast My Vote
+          </button>
+          <div class="warning-note">
+            ⚠ Your vote is final and cannot be changed after submission.
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-title">Confirm Your Vote</div>
+    <div class="modal-sub">This action is permanent and cannot be undone.</div>
+    <div class="modal-candidate">
+      <div class="candidate-avatar" id="modal-avatar" style="width:40px;height:40px;font-size:1rem;border-radius:10px;background:linear-gradient(135deg,var(--ink) 0%,#3a4055 100%);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;color:var(--gold);flex-shrink:0;"></div>
+      <div>
+        <div class="name" id="modal-name"></div>
+        <div class="pos" id="modal-pos"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-green" id="confirm-btn" onclick="submitVote()">
+        Yes, Cast Vote
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let selectedId = null, selectedName = '', selectedPos = '';
+
+  function selectCandidate(el) {
+    document.querySelectorAll('.candidate-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedId = el.dataset.id;
+    selectedName = el.dataset.name;
+    selectedPos = el.dataset.position;
+    document.getElementById('selected-display').textContent = selectedName;
+    document.getElementById('cast-btn').disabled = false;
+  }
+
+  function openConfirm() {
+    if (!selectedId) return;
+    document.getElementById('modal-avatar').textContent = selectedName[0].toUpperCase();
+    document.getElementById('modal-name').textContent = selectedName;
+    document.getElementById('modal-pos').textContent = selectedPos || 'Candidate';
+    document.getElementById('confirm-modal').classList.add('show');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirm-modal').classList.remove('show');
+  }
+
+  async function submitVote() {
+    const btn = document.getElementById('confirm-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner" style="border-top-color:#fff;border-color:rgba(255,255,255,0.3)"></span> Casting...';
+
+    try {
+      const res = await fetch('/api/submit-vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidate_id: parseInt(selectedId) })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        closeConfirm();
+        document.querySelector('.ballot-page').innerHTML = `
+          <div class="container">
+            <div class="status-screen">
+              <span class="status-icon">✅</span>
+              <h2>Vote Recorded!</h2>
+              <p style="margin-bottom:1.5rem">${data.message}</p>
+              <p style="margin-bottom:2rem;color:var(--muted);font-size:0.9rem">Your vote for <strong>${selectedName}</strong> has been securely recorded.</p>
+              <a href="/results" class="btn btn-primary">View Live Results</a>
+            </div>
+          </div>`;
+      } else {
+        closeConfirm();
+        showToast(data.message, 'error');
+        if (res.status === 401) setTimeout(() => window.location.href='/', 2000);
+      }
+    } catch (e) {
+      closeConfirm();
+      showToast('Network error. Please try again.', 'error');
+    }
+    btn.disabled = false;
+    btn.innerHTML = 'Yes, Cast Vote';
+  }
+
+  // Close modal on outside click
+  document.getElementById('confirm-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeConfirm();
+  });
+</script>
+{% endblock %}
