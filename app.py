@@ -377,6 +377,8 @@ def init_db():
             db.session.add(ElectionSettings())
             db.session.commit()
 
+# Always run init_db on startup, not just when run directly
+init_db()
+
 if __name__ == '__main__':
-    init_db()
     socketio.run(app, debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
